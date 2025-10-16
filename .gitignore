@@ -1,0 +1,43 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Go workspace file
+go.work
+
+# Debug binaries
+cmd/web/__debug_bin*
+__debug_bin*
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker volumes (optional - uncomment if needed)
+# These are managed by docker-compose
+# prometheus-data/
+# grafana-data/
+# postgres-data/
+# redis-data/
+
+# OS
+.DS_Store
+Thumbs.db
+
