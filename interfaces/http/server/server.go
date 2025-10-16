@@ -19,6 +19,7 @@ import (
 	_ "task_mng/docs" // This is required for swagger to work
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -35,6 +36,9 @@ type Server struct {
 
 func New(config *config.Config, jwtMng *jwt.Manager, postgres *postgres.Database, redis *redis.Redis) *Server {
 	router := gin.Default()
+
+	// Add Prometheus metrics middleware
+	router.Use(middleware.PrometheusMetrics())
 
 	// Set max body size to 3MB
 	router.MaxMultipartMemory = 3 << 20 // 3MB
@@ -90,6 +94,9 @@ func (s *Server) Router() *gin.Engine {
 func (s *Server) setupRoutes() {
 	// Swagger documentation
 	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Prometheus metrics endpoint
+	s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// API v1 routes
 	v1 := s.router.Group("/api/v1")
