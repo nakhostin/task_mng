@@ -16,6 +16,8 @@ import (
 	"task_mng/services/task"
 	"task_mng/services/user"
 
+	_ "task_mng/docs" // This is required for swagger to work
+
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

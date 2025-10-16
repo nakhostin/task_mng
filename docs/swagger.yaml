@@ -1,0 +1,635 @@
+definitions:
+  aggregate.AssigneeInfo:
+    properties:
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  aggregate.AuthResponse:
+    properties:
+      tokens:
+        $ref: '#/definitions/jwt.TokenPair'
+      user:
+        $ref: '#/definitions/aggregate.UserResponse'
+    type: object
+  aggregate.TaskListResponse:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/aggregate.TaskResponse'
+        type: array
+    type: object
+  aggregate.TaskResponse:
+    properties:
+      assignee:
+        $ref: '#/definitions/aggregate.AssigneeInfo'
+      created_at:
+        type: string
+      description:
+        type: string
+      due_date:
+        type: string
+      id:
+        type: integer
+      priority:
+        $ref: '#/definitions/entity.Priority'
+      status:
+        $ref: '#/definitions/entity.Status'
+      summary:
+        type: string
+    type: object
+  aggregate.UserListResponse:
+    properties:
+      meta:
+        $ref: '#/definitions/response.Meta'
+      users:
+        items:
+          $ref: '#/definitions/aggregate.UserResponse'
+        type: array
+    type: object
+  aggregate.UserResponse:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      registered_at:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.Priority:
+    enum:
+    - lowest
+    - low
+    - medium
+    - high
+    - highest
+    type: string
+    x-enum-varnames:
+    - PriorityLowest
+    - PriorityLow
+    - PriorityMedium
+    - PriorityHigh
+    - PriorityHighest
+  entity.Status:
+    enum:
+    - ToDo
+    - InProgress
+    - Done
+    type: string
+    x-enum-varnames:
+    - StatusTodo
+    - StatusInProgress
+    - StatusDone
+  jwt.TokenPair:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  response.Meta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      sort:
+        type: string
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.Meta'
+    type: object
+  task.AssignRequest:
+    properties:
+      assignee:
+        example: admin
+        type: string
+      task_id:
+        example: 1
+        type: integer
+    type: object
+  task.CreateRequest:
+    properties:
+      assignee:
+        example: admin
+        type: string
+      description:
+        example: Implement task management system
+        type: string
+      due_date:
+        example: "2025-01-01T00:00:00Z"
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/entity.Priority'
+        example: medium
+      summary:
+        example: Implement task management system
+        type: string
+    type: object
+  task.StatusTransitionRequest:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.Status'
+        example: InProgress
+      task_id:
+        example: 1
+        type: integer
+    type: object
+  task.UpdateRequest:
+    properties:
+      assignee:
+        example: admin
+        type: string
+      description:
+        example: Implement task management system
+        type: string
+      due_date:
+        example: "2025-01-01T00:00:00Z"
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/entity.Priority'
+        example: medium
+      summary:
+        example: Implement task management system
+        type: string
+    type: object
+  user.CreateRequest:
+    properties:
+      email:
+        example: admin@xdr.com
+        type: string
+      full_name:
+        example: Admin
+        type: string
+      password:
+        example: Admin!123
+        type: string
+      username:
+        example: admin
+        type: string
+    type: object
+  user.LoginRequest:
+    properties:
+      password:
+        example: Admin!123
+        type: string
+      username:
+        example: admin
+        type: string
+    type: object
+  user.RefreshRequest:
+    properties:
+      refresh_token:
+        example: refresh_token
+        type: string
+    type: object
+  user.UpdateProfileRequest:
+    properties:
+      email:
+        example: admin@xdr.com
+        type: string
+      full_name:
+        example: Admin
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return tokens
+      parameters:
+      - description: User login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aggregate.AuthResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: User login
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get a new access token using refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens refreshed successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aggregate.AuthResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Refresh access token
+      tags:
+      - Auth
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User fetched
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aggregate.UserResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aggregate.UserResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Profile
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all tasks with optional filters and pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by assignee username
+        in: query
+        name: assignee
+        type: string
+      - description: Filter by status (ToDo, InProgress, Done)
+        enum:
+        - ToDo
+        - InProgress
+        - Done
+        in: query
+        name: status
+        type: string
+      - description: Filter by priority (lowest, low, medium, high, highest)
+        enum:
+        - lowest
+        - low
+        - medium
+        - high
+        - highest
+        in: query
+        name: priority
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tasks fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aggregate.TaskListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all tasks
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task in the system
+      parameters:
+      - description: Task creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a new task
+      tags:
+      - Tasks
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a task by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task deleted successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete a task
+      tags:
+      - Tasks
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aggregate.TaskResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get a task by ID
+      tags:
+      - Tasks
+    put:
+      consumes:
+      - application/json
+      description: Update an existing task by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task updated successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update a task
+      tags:
+      - Tasks
+  /tasks/assign:
+    put:
+      consumes:
+      - application/json
+      description: Assign or reassign a task to a specific user
+      parameters:
+      - description: Task assignment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.AssignRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task assigned successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Assign a task to a user
+      tags:
+      - Tasks
+  /tasks/transition:
+    put:
+      consumes:
+      - application/json
+      description: Change the status of a task (e.g., from ToDo to InProgress)
+      parameters:
+      - description: Task status transition data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.StatusTransitionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task status transitioned successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Transition task status
+      tags:
+      - Tasks
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all users with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aggregate.UserListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user in the system (requires authentication)
+      parameters:
+      - description: User registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Create successful
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a new user
+      tags:
+      - Users
+swagger: "2.0"
