@@ -6,12 +6,14 @@ import (
 	"log/slog"
 	"net/http"
 	"task_mng/cmd/web/config"
+	taskR "task_mng/domain/task"
 	userR "task_mng/domain/user"
 	"task_mng/interfaces/http/handlers"
 	"task_mng/interfaces/http/middleware"
 	"task_mng/pkg/jwt"
 	"task_mng/pkg/postgres"
 	"task_mng/pkg/redis"
+	"task_mng/services/task"
 	"task_mng/services/user"
 
 	"github.com/gin-gonic/gin"
@@ -38,13 +40,16 @@ func New(config *config.Config, jwtMng *jwt.Manager, postgres *postgres.Database
 	userRepo := userR.New(postgres)
 	userService := user.New(userRepo, jwtMng)
 
+	taskRepo := taskR.New(postgres)
+	taskService := task.New(taskRepo, redis, userRepo)
+
 	srv := &Server{
 		config:   config,
 		router:   router,
 		jwtMng:   jwtMng,
 		postgres: postgres,
 		redis:    redis,
-		handlers: handlers.New(userService),
+		handlers: handlers.New(userService, taskService),
 	}
 
 	srv.setupRoutes()
@@ -102,4 +107,14 @@ func (s *Server) setupRoutes() {
 	profile := protected.Group("/profile")
 	profile.GET("", s.handlers.User.Me)
 	profile.PUT("", s.handlers.User.Update)
+
+	// ********************* Task routes *********************
+	task := protected.Group("/tasks")
+	task.POST("", s.handlers.Task.Create)
+	task.GET("/:id", s.handlers.Task.FindByID)
+	task.GET("", s.handlers.Task.FindAll)
+	task.PUT("/:id", s.handlers.Task.Update)
+	task.PUT("/transition", s.handlers.Task.Transition)
+	task.PUT("/assign", s.handlers.Task.Assign)
+	task.DELETE("/:id", s.handlers.Task.Delete)
 }
